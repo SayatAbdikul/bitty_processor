@@ -10,11 +10,9 @@ PROJECT_SOURCES = \
   alu.v \
   bitty.v \
   branch_logic.v \
-  cpu.v \
-  dff_lol.v \
+  control_unit.v \
   fetch_instruction.v \
   lsu.v \
-  mux.v \
   mux2to1.v \
   pc.v \
   uart_module.v \

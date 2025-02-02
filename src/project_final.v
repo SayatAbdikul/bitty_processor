@@ -89,7 +89,7 @@ module tt_um_bitty (
         .rx_data(from_uart_to_modules),  
         .tx_done(tx_done),        
         .instruction_out(mem_out), 
-        .tx_start_out(tx_en_fiu),       
+        .tx_start_out(tx_en_fiu),  // active when low     
         .tx_data_out(data_to_uart_from_fetch),  
         .done_out(fetch_done)
     );
@@ -146,7 +146,7 @@ module tt_um_bitty (
     mux2to1 mux2to1_txdata(
         .reg0({8'b0, data_to_uart_from_fetch}),
         .reg1({8'b0,from_bitty_to_uart}),
-        .sel(uart_sel),
+        .sel(uart_sel), //defines which register will come out
         .out({unused_8bit,tx_data})
     );
 
@@ -156,7 +156,7 @@ module tt_um_bitty (
     mux2to1 mux2to1_txen(
         .reg0({15'b0, tx_en_fiu}),
         .reg1({15'b0, tx_en_bitty}),
-        .sel(uart_sel),
+        .sel(uart_sel), //defines which register will come out
         .out({unused_15bit, tx_en})
     );
 
@@ -203,8 +203,8 @@ module tt_um_bitty (
                 stop_for_rw = 1'b0;
             end
             S7: begin
-                uart_sel = 1'b1;
-                stop_for_rw = 1'b1;
+                uart_sel = 1'b1; // activates for getting the data from main memory
+                stop_for_rw = 1'b1; // stops the program when the read/write in uart goes
             end
             default: begin
                  run_bitty = 0;
@@ -216,10 +216,10 @@ module tt_um_bitty (
         case(cur_state)
             S0: next_state = (fetch_done==1) ? S1:S0;
             S1: next_state = S2;
-            S2: next_state = (mem_out[1:0]==2'b11) ? S3:S4;
+            S2: next_state = (mem_out[1:0]==2'b11) ? S3:S4; // ???
             S3: next_state = S5;
             S4: next_state = S5; 
-            S5: next_state = (mem_out[1:0]==2'b11) ? S7:S6;
+            S5: next_state = (mem_out[1:0]==2'b11) ? S7:S6; // if lsu, state will be S7
             S6: next_state = (done==1) ? S0:S6;
             S7: next_state = (done==1) ? S0:S7;
             default: next_state = S0;
