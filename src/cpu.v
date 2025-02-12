@@ -1,4 +1,4 @@
-module control_unit (
+module cpu (
     input clk,
     input run,
     input reset,

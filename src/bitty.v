@@ -26,7 +26,7 @@ module bitty (
     wire [15:0] alu_result, immediate;
     wire [1:0] en_ls;
     // Control Unit instance
-    control_unit control(
+    cpu control(
         .instruction(instruction),
         .run(run),
         .clk(clk),
