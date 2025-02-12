@@ -14,6 +14,8 @@ PROJECT_SOURCES = \
   fetch_instruction.v \
   lsu.v \
   mux2to1.v \
+  loader.v \
+  mux.v \
   pc.v \
   uart_module.v \
   uart_tx.v \

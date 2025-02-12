@@ -1,29 +1,33 @@
 module alu (
-    input clk,
-    input wire [15:0] in_a,
-    input wire [15:0] in_b,
-    input wire [2:0] select,
-    input run,
-    output reg [15:0] alu_out
+    input [15:0] in_a,
+    input  [15:0] in_b,
+    input  [2:0] select,
+    output [15:0] alu_out
 );
-    localparam add = 0, sub = 1, and_op = 2, or_op = 3, xor_op = 4, shl = 5, shr = 6, cmp = 7;
-
+    parameter add = 3'b000; 
+    parameter sub = 3'b001;
+    parameter and_op = 3'b010;
+    parameter or_op =  3'b011;
+    parameter xor_op = 3'b100;
+    parameter shl = 3'b101;
+    parameter shr = 3'b110;
+    parameter cmp = 3'b111;    
+    reg [15:0] result;
     always @(*) begin
         // Default value for alu_out
-        alu_out = 16'b0;
+        //result = 16'b0;
 
-        if (run) begin
-            case (select)
-                add: alu_out = in_a + in_b;
-                sub: alu_out = in_a - in_b;
-                and_op: alu_out = in_a & in_b;
-                or_op: alu_out = in_a | in_b;
-                xor_op: alu_out = in_a ^ in_b;
-                shl: alu_out = in_a << in_b;
-                shr: alu_out = in_a >> in_b;
-                cmp: alu_out = (in_a > in_b) ? 1 : (in_a < in_b) ? 2 : 0;
-                default: alu_out = 16'b0; // Default case for invalid select
-            endcase
-        end
+        case (select)
+            add: result = in_a + in_b;
+            sub: result = in_a - in_b;
+            and_op: result = in_a & in_b;
+            or_op: result = in_a | in_b;
+            xor_op: result = in_a ^ in_b;
+            shl: result = in_a << (in_b % 16); 
+            shr: result = in_a >> (in_b % 16); 
+            cmp: result = (in_a > in_b) ? 1 : (in_a < in_b) ? 2 : 0;
+            default: result = 16'b0; // Default case for invalid select
+        endcase
     end
+    assign alu_out = result;
 endmodule

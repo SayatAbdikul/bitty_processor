@@ -1,126 +1,146 @@
 module lsu(
-    // General ports
     input wire clk,
-    input wire reset, // Active-low reset
-    output reg done_out, // Signal indicating the operation is complete
-    // Design preferences
-    input en_ls, // lsu activation
-    input [1:0] cu_state,
-    input wire [7:0] address, // 8-bit address to be sent
+    input wire reset,
+
+    input [1:0] en_ls,
     input [15:0] data_to_store,
-    output reg [15:0] data_to_load, // 16-bit instruction received
-    // Ports for UART module
-    input wire rx_do, // Signal indicating data received
-    input wire [7:0] rx_data, // Data received from UART
-    input wire tx_done, // Signal indicating transmission is done
-    output reg tx_start_out, // Signal to start UART transmission -> low active
-    output reg [7:0] tx_data_out // Data to be transmitted over UART
+    input wire [7:0] address,  // 8-bit address to be sent
+
+    
+    input wire rx_do,          // Signal indicating data received
+    input wire [7:0] rx_data,  // Data received from UART
+    input wire tx_done,        // Signal indicating transmission is done
+    output [15:0] data_to_load, // 16-bit instruction received
+    output tx_start_out,       // Signal to start UART transmission
+    output [7:0] tx_data_out,  // Data to be transmitted over UART
+    output done_out            // Signal indicating the operation is complete
 );
+
+    reg [15:0] instruction;    // 16-bit instruction received
+    reg tx_start;              // Signal to start UART transmission
+    reg [7:0] tx_data;         // Data to be transmitted over UART
+    reg done;                  // Signal indicating the operation is complete
+
+    assign done_out = done;
+    assign data_to_load = instruction;
+    assign tx_start_out = tx_start;
+    assign tx_data_out = tx_data;
+
     // State encoding
-    parameter IDLE = 4'b0000;
-    parameter SEND_FLAG = 4'b0001;
-    parameter SEND_ADDR = 4'b0010;
-    parameter RECEIVE_DATA_HIGH = 4'b0011;
-    parameter RECEIVE_DATA_LOW = 4'b0100;
-    parameter SEND_DATA_HIGH = 4'b0101;
-    parameter SEND_DATA_LOW = 4'b0110;
-    parameter DONE = 4'b0111;
+    parameter SEND_FLAG = 3'b001;
+    parameter SEND_ADDR = 3'b010;
+    parameter RECEIVE_DATA_LOW = 3'b011;
+    parameter RECEIVE_DATA_HIGH = 3'b100;
+    parameter SEND_DATA_HIGH = 3'b101;
+    parameter SEND_DATA_LOW = 3'b110;
+    parameter DONE = 3'b111;
 
-    reg [3:0] state, next_state;
+    parameter LOAD = 2'b01;
+    parameter STORE = 2'b10;
 
-    // Sequential logic for state transition
-    always @(posedge clk or negedge reset) begin
-        if (!reset) begin
-            state <= IDLE;
-        end else begin
-            state <= next_state;
-        end
+    
+    reg [2:0] state, next_state;
+
+    wire [1:0] en;
+    assign en = en_ls;
+
+
+    always @(posedge clk) begin
+		if (!reset) begin
+			state <= SEND_FLAG;
+		end
+		else begin
+			state <= next_state;
+		end
     end
 
-    // State machine logic
+    /* verilator lint_off LATCH */
     always @(*) begin
-        // Default values
-        next_state = IDLE;  // Default next state
-        tx_start_out = 1;   // No transmission by default
-        tx_data_out = 8'b00000000;
-        done_out = 0;
+        tx_start = 1;  
+        tx_data = 8'b00000000;
+        done = 0;
+        instruction = instruction;
 
         case (state)
-            IDLE: begin
-                done_out = 0;
-                if (en_ls) begin
-                    next_state = SEND_FLAG;
-                end else begin
-                    next_state = IDLE;
-                end
-            end
+
             SEND_FLAG: begin
-                tx_data_out = 8'b00000011;  // Send flag byte
-                tx_start_out = 0;  // Start transmission
-                if (tx_done) begin
-                    tx_start_out = 1;  // Stop transmission
-                    next_state = SEND_ADDR;
-                end else begin
-                    next_state = SEND_FLAG;
+                if(en==2'b01) begin 
+                    tx_data = 8'b00000001;  
+                    tx_start = 0;
+
                 end
+                else if(en==2'b10) begin
+                    tx_data = 8'b00000010;
+                    tx_start = 0; 
+                end
+
             end
+
             SEND_ADDR: begin
-                tx_data_out = address;  // Send address byte
-                tx_start_out = 0;  // Start transmission
-                if (tx_done) begin
-                    tx_start_out = 1;  // Stop transmission
-                    case (cu_state)
-                        2'b01: next_state = RECEIVE_DATA_HIGH;  // Load
-                        2'b10: next_state = SEND_DATA_HIGH;     // Store
-                        default: next_state = IDLE;             // Invalid state
-                    endcase
-                end else begin
-                    next_state = SEND_ADDR;
-                end
+                tx_data = address;  
+                tx_start = 0;
             end
+
             RECEIVE_DATA_HIGH: begin
                 if (rx_do) begin
-                    data_to_load[15:8] <= rx_data;  // Store high 8 bits of data
-                    next_state = RECEIVE_DATA_LOW;
-                end else begin
-                    next_state = RECEIVE_DATA_HIGH;
+                    instruction[15:8] = rx_data;  
                 end
             end
+
             RECEIVE_DATA_LOW: begin
                 if (rx_do) begin
-                    data_to_load[7:0] <= rx_data;  // Store low 8 bits of data
-                    next_state = DONE;
-                end else begin
-                    next_state = RECEIVE_DATA_LOW;
+                    instruction[7:0] = rx_data;
                 end
             end
+
             SEND_DATA_HIGH: begin
-                tx_data_out = data_to_store[15:8];  // Send high 8 bits of data
-                tx_start_out = 0;  // Start transmission
-                if (tx_done) begin
-                    tx_start_out = 1;  // Stop transmission
-                    next_state = SEND_DATA_LOW;
-                end else begin
-                    next_state = SEND_DATA_HIGH;
-                end
+                tx_data = data_to_store[15:8];
+                tx_start = 0;
             end
+
             SEND_DATA_LOW: begin
-                tx_data_out = data_to_store[7:0];  // Send low 8 bits of data
-                tx_start_out = 0;  // Start transmission
-                if (tx_done) begin
-                    tx_start_out = 1;  // Stop transmission
-                    next_state = DONE;
-                end else begin
-                    next_state = SEND_DATA_LOW;
-                end
+                tx_data = data_to_store[7:0];
+                tx_start = 0;
             end
+
             DONE: begin
-                done_out = 1;  // Set done signal
-                next_state = IDLE;
+                done = 1'b1;
             end
+
             default: begin
-                next_state = IDLE;
+                tx_start = 1;
+                tx_data = 8'b00000000;
+                done = 0;
+                instruction = instruction;
+
             end
         endcase
+    end
+
+    /* verilator lint_off LATCH */
+    always @(*) begin
+        next_state = next_state;
+        case (state)
+            SEND_FLAG: next_state = (tx_done==1'b1 & en_ls!=2'b0) ? SEND_ADDR:SEND_FLAG;
+            SEND_ADDR: begin
+                if (tx_done) begin
+                    if (en==LOAD) begin 
+                        next_state = RECEIVE_DATA_HIGH; 
+                    end
+                    else if (en==STORE) begin 
+                        next_state = SEND_DATA_HIGH;  
+                    end 
+                    else begin
+                        next_state = SEND_ADDR;
+                    end
+                end
+            end
+            RECEIVE_DATA_HIGH: next_state = (rx_do==1'b1) ? RECEIVE_DATA_LOW:RECEIVE_DATA_HIGH;
+            RECEIVE_DATA_LOW: next_state = (rx_do==1'b1) ? DONE:RECEIVE_DATA_LOW;
+            SEND_DATA_HIGH: next_state = (tx_done==1'b1) ? SEND_DATA_LOW:SEND_DATA_HIGH;
+            SEND_DATA_LOW: next_state = (tx_done==1'b1) ? DONE:SEND_DATA_LOW;
+            DONE: next_state = SEND_FLAG;
+            default: next_state = SEND_FLAG;
+        endcase 
     end
 endmodule

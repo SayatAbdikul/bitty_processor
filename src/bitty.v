@@ -1,128 +1,116 @@
 module bitty (
-    input [15:0] d_instr,
-    input clk,
     input run,
+    input clk,
     input reset,
-    output reg [15:0] d_out,
-    output done,
-    // UART communication ports
+    input [15:0] d_instr,
+    // UART
     input [7:0] rx_data,
     input rx_done,
     input tx_done,
-    output tx_en,
-    output reg [7:0] tx_data
-);
-    reg [15:0] reg_i, reg_c, reg_s; 
-    reg [15:0] registers [7:0];
-    wire en_c, en_s;
-    reg [2:0] Rx, Ry, sel;
-    reg [7:0] en_reg;
-    reg [15:0] result, operand;
-    reg [1:0] current_state, format;
 
+    output tx_en,
+    output [7:0] tx_data,
+    output [15:0] d_out,
+    output done
+);
+    genvar k;
+    wire [15:0] instruction, reg_i, reg_c; //wires for data
+    wire [15:0] reg_s, data_to_ld, out_mux, mux2_out;
+    wire [15:0] out [7:0];
+    // enable values
+    wire en_c, en_s, ls_done, sel_reg_c, en_inst; 
+    wire [7:0] en_reg;
+    wire [3:0] mux_sel;
+    wire [2:0] alu_sel;
+    // values for output
+    wire [15:0] alu_result, immediate;
+    wire [1:0] en_ls;
     // Control Unit instance
     control_unit control(
-        .instruction(reg_i),
+        .instruction(instruction),
         .run(run),
         .clk(clk),
+        .en(en_reg),
         .reset(reset),
-        .rx_done(rx_done),
-        .tx_done(tx_done),
+        .mux_sel(mux_sel), // for getting the register
+        .sel(alu_sel),
+        .ls_done(ls_done),
+        .sel_reg_c(sel_reg_c),
         .en_c(en_c),
+        .en_ls(en_ls),
+        .en_inst(en_inst),
         .en_s(en_s),
-        .en_reg(en_reg),
-        .current_state(current_state),
+        .immediate(immediate),
         .done(done)
     );
 
+    generate
+        for (k = 0; k < 8; k=k+1) begin : gen_dff
+
+            loader reg_out (
+                .clk(clk),
+                .en(en_reg[k]),
+                .d_in(reg_c),
+                .reset(reset),
+				.mux_out(out[k])
+            );
+        end
+    endgenerate
+    //values from multiplexer
+    mux mux_inst(
+        .reg0(out[0]),
+        .reg1(out[1]),
+        .reg2(out[2]),
+        .reg3(out[3]),
+        .reg4(out[4]),
+        .reg5(out[5]),
+        .reg6(out[6]),
+        .reg7(out[7]),
+        .immediate(immediate),
+        .def_val(0),
+        .mux_sel(mux_sel),
+        .mux_out(out_mux)
+    );
+    mux2to1 for_reg_c(
+        .reg0(alu_result),
+        .reg1(data_to_ld),
+        .sel(sel_reg_c),
+        .out(mux2_out)
+    );
+
     // LSU instance
-    wire lsu_done;
     wire [15:0] lsu_data_to_load;
     reg [7:0] address;  // Address for LSU
     reg [15:0] data_to_store;  // Data to be stored by LSU
+    
+
+    
+    loader reg_inst(clk, en_inst, d_instr, reset, instruction);
+    loader reg_s_load(clk, en_s, out_mux, reset, reg_s);
+    loader reg_c_load(clk, en_c, mux2_out, reset, reg_c);
     lsu lsu_inst(
         .clk(clk),
         .reset(reset),
-        .done_out(lsu_done),
-        .en_ls((format == 3)),  // the lsu module activation
-        .cu_state(current_state),
-        .address(address),  // Address comes from decoded instruction or PC
-        .data_to_store(data_to_store),  // Data to be stored comes from ALU result
-        .data_to_load(lsu_data_to_load),
-        .rx_do(rx_done),
+        .en_ls(en_ls),
+        .data_to_store(reg_s),
+        .address(out_mux[7:0]), 
+
         .rx_data(rx_data),
         .tx_done(tx_done),
+        .rx_do(rx_done),
+        .data_to_load(data_to_ld),
         .tx_start_out(tx_en),
-        .tx_data_out(tx_data)
+        .tx_data_out(tx_data),
+        .done_out(ls_done)
     );
-
-    // Combinational logic for ALU and output
-    always @(*) begin
-        // Default values
-        operand = 16'b0;
-        d_out = 16'b0;
-
-        // ALU logic
-        if (en_s) begin
-            operand = (format == 1) ? {8'b0, d_instr[12:5]} : registers[Ry];
-        end
-
-        // Output logic
-        if (done) begin
-            d_out = result;
-        end
-    end
-
-    // Sequential logic for registers and state updates
-    always @(posedge clk or posedge reset) begin
-        if (!reset) begin
-            for (integer i = 0; i < 8; i = i + 1) begin
-                registers[i] <= 16'b0;  // Initialize registers to 0
-            end
-            reg_i <= 16'b0;
-            reg_c <= 16'b0;
-            reg_s <= 16'b0;
-            address <= 8'b0;
-            data_to_store <= 16'b0;
-        end else if (run) begin
-            reg_i <= d_instr;
-            Rx <= d_instr[15:13];
-            Ry <= d_instr[12:10];
-            sel <= d_instr[4:2];
-            format <= d_instr[1:0];
-
-            if (en_s) begin
-                reg_s <= registers[Rx];
-            end
-
-            if (en_c) begin
-                reg_c <= result;
-                if (format == 3) begin
-                    if (d_instr[2]) begin
-                        data_to_store <= registers[Rx];
-                    end else begin
-                        registers[Rx] <= lsu_data_to_load;
-                        data_to_store <= lsu_data_to_load;
-                    end
-                end                
-            end
-
-            if (en_reg[Rx]) begin
-                if (format != 3) begin
-                    registers[Rx] <= reg_c; 
-                end    
-            end
-
-        end
-    end
 
     // ALU instance
     alu alu_inst(
-        .clk(clk),
         .in_a(reg_s),
-        .in_b(operand),
-        .select(sel),
-        .run(run),
-        .alu_out(result)
+        .in_b(out_mux),
+        .select(alu_sel),
+        .alu_out(alu_result) // Changed to alu_out
     );
+    
+    assign d_out = reg_c;
 endmodule
