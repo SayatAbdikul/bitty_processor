@@ -78,37 +78,37 @@ module lsu(
 
             SEND_ADDR: begin
                 tx_data = address;  
-                tx_start = 0;
+                tx_start = 0; 
             end
 
             RECEIVE_DATA_HIGH: begin
                 if (rx_do) begin
-                    instruction[15:8] = rx_data;  
+                    instruction[15:8] = rx_data;  // Store lower 8 bits of instruction
                 end
             end
 
             RECEIVE_DATA_LOW: begin
                 if (rx_do) begin
-                    instruction[7:0] = rx_data;
+                    instruction[7:0] = rx_data;  // Store upper 8 bits of instruction
                 end
             end
 
             SEND_DATA_HIGH: begin
-                tx_data = data_to_store[15:8];
-                tx_start = 0;
+                tx_data = data_to_store[15:8];  // Send flag byte
+                tx_start = 0;  // Start transmission
             end
 
             SEND_DATA_LOW: begin
-                tx_data = data_to_store[7:0];
-                tx_start = 0;
+                tx_data = data_to_store[7:0];  // Send flag byte
+                tx_start = 0;  // Start transmission
             end
 
             DONE: begin
-                done = 1'b1;
+                done = 1'b1;  // Set done signal
             end
 
             default: begin
-                tx_start = 1;
+                tx_start = 1;  // No transmission by default
                 tx_data = 8'b00000000;
                 done = 0;
                 instruction = instruction;

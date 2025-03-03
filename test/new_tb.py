@@ -158,9 +158,9 @@ async def uart_module_test(dut):
 
     # Timer coroutine for the 10-minute limit
     async def timeout_timer():
-        dut._log.info("10-minute timer started.")
-        await Timer(10 * 60 * 1e9, units="ns")  # 10 minutes in nanoseconds
-        dut._log.error("Test timeout: Exceeded 10 minutes.")
+        dut._log.info("The imer started.")
+        await Timer(10 * 15 * 6e5, units="ns")  # 10 minutes in nanoseconds
+        dut._log.error("Test timeout")
         raise TimeoutError("Test exceeded the 10-minute limit.")
 
     try:

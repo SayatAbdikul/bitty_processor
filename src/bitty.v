@@ -26,7 +26,7 @@ module bitty (
     wire [15:0] alu_result, immediate;
     wire [1:0] en_ls;
     // Control Unit instance
-    cpu control(
+    control_unit control(
         .instruction(instruction),
         .run(run),
         .clk(clk),
@@ -45,8 +45,7 @@ module bitty (
     );
 
     generate
-        for (k = 0; k < 8; k=k+1) begin : gen_dff
-
+        for (k = 0; k < 8; k=k+1) begin : loader
             loader reg_out (
                 .clk(clk),
                 .en(en_reg[k]),
@@ -78,10 +77,6 @@ module bitty (
         .out(mux2_out)
     );
 
-    // LSU instance
-    wire [15:0] lsu_data_to_load;
-    reg [7:0] address;  // Address for LSU
-    reg [15:0] data_to_store;  // Data to be stored by LSU
     
 
     
@@ -91,6 +86,7 @@ module bitty (
     lsu lsu_inst(
         .clk(clk),
         .reset(reset),
+
         .en_ls(en_ls),
         .data_to_store(reg_s),
         .address(out_mux[7:0]), 
@@ -104,12 +100,11 @@ module bitty (
         .done_out(ls_done)
     );
 
-    // ALU instance
     alu alu_inst(
         .in_a(reg_s),
         .in_b(out_mux),
         .select(alu_sel),
-        .alu_out(alu_result) // Changed to alu_out
+        .alu_out(alu_result)
     );
     
     assign d_out = reg_c;

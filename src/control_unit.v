@@ -1,4 +1,4 @@
-module cpu (
+module control_unit (
     input clk,
     input run,
     input reset,
@@ -38,12 +38,12 @@ module cpu (
         en_c = 0;
         done = 0;
         mux_sel = 4'b1001;
-        sel = 3'b0;
-        en = 8'b0;
+        sel = 0;
+        en = 0;
         immediate = {8'b0, instruction[12:5]}; 
         sel_reg_c = 1'b0;
         en_ls = 2'b00;
-        $display("the current state is %b", state);
+        //$display("the current state is %b", state);
         case (state)
             IDLE: begin
                 if(format!=2'b10) begin
@@ -85,7 +85,6 @@ module cpu (
                             en_ls = 2'b10;
                         end
                 end
-                //LSU d_out loaded to reg C
                 if(format==2'b11) begin
                     sel_reg_c = 1'b1;
                 end
