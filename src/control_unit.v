@@ -59,7 +59,7 @@ module control_unit (
             end
 
             FETCH: begin
-                $display("run in fetch is %b", run);
+                //$display("run in fetch is %b", run);
                 if(format!=2'b10) begin
                     if(format == 2'b00 | format == 2'b11) begin
                         mux_sel = {1'b0, instruction[12:10]};
@@ -122,7 +122,7 @@ module control_unit (
     always @(*) begin
         case (state)
             IDLE: begin
-                $display("CU state is IDLE: instruction is %b", instruction);
+                //$display("CU state is IDLE: instruction is %b", instruction);
                 if(run==1) begin
                     if(format==2'b10) begin
                         next_state = STORE;
