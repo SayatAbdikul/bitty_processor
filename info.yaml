@@ -1,8 +1,8 @@
 # Tiny Tapeout project information
 project:
   title:        "Bitty"      # Project title
-  author:       "Moldir"      # Your name
-  discord:      ""      # Your discord username, for communication and automatically assigning you a Tapeout role (optional)
+  author:       "Sayat"      # Your name
+  discord:      "sayatumarov"      # Your discord username, for communication and automatically assigning you a Tapeout role (optional)
   description:  "16-bit simple processor"      # One line description of what your project does
   language:     "Verilog" # other examples include SystemVerilog, Amaranth, VHDL, etc
   clock_hz:     10       # Clock frequency in Hz (or 0 if not applicable)
@@ -21,8 +21,8 @@ project:
     - "alu.v"
     - "bitty.v"
     - "branch_logic.v"
-    - "cpu.v"
-    - "dff_lol.v"
+    - "control_unit.v"
+    - "loader.v"
     - "fetch_instruction.v"
     - "lsu.v"
     - "mux.v"
