@@ -9,5 +9,6 @@ test/sim_build
 test/__pycache__/
 test/results.xml
 test/gate_level_netlist.v
-
+test/instructions_for_em.txt
+test/uart_emulator_log.txt
 .codegpt
