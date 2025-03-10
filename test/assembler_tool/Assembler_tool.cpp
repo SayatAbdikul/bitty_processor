@@ -79,7 +79,7 @@ std::string Assembler_tool::DisassembleGeneral(int instruction){
     command += commands[getRange(2, 4, instruction)]+" r";
     command += std::to_string(getRange(13, 15, instruction))+" r";
     command += std::to_string(getRange(10, 12, instruction));
-    std::cout<<"from "<<instruction<<" to "<<command<<"\n";
+    std::cout<<"from "<<std::hex<<instruction<<" to "<<command<<"\n";
     return command;
 }
 
@@ -88,7 +88,7 @@ std::string Assembler_tool::DisassembleImmediate(int instruction){
     command += commands[getRange(2, 4, instruction)]+"i r";
     command += std::to_string(getRange(13, 15, instruction))+" #";
     command += std::to_string(getRange(5, 12, instruction));
-    std::cout<<"from "<<instruction<<" to "<<command<<"\n";
+    std::cout<<"from hex "<<std::hex<<instruction<<" to "<<command<<"\n";
     return command;
 }
 std::string Assembler_tool::DisassembleCondition(int instruction){
@@ -116,5 +116,6 @@ std::string Assembler_tool::DisassembleCondition(int instruction){
 std::string Assembler_tool::Disassemble(int instruction){
     if(getRange(0, 1, instruction)==1) return DisassembleImmediate(instruction);
     else if(getRange(0, 1, instruction)==2) return DisassembleCondition(instruction);
-    else return DisassembleGeneral(instruction);
+    else if(getRange(0, 1, instruction) == 0) return DisassembleGeneral(instruction);
+    else return "The instruction is LSU. Can't be assembled right now. ";
 }

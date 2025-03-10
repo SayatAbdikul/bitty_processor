@@ -59,7 +59,7 @@ int main(int argc, char *argv[]) {
         }
 
         int instruction;
-        while (inputFile.read(reinterpret_cast<char*>(&instruction), sizeof(instruction))) {
+        while (inputFile >> std::hex >> instruction) {
             std::string disassembled = tool.Disassemble(instruction);
             if(output_file_bool) outputFile << disassembled << std::endl;
         }
