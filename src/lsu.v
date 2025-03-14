@@ -62,7 +62,6 @@ module lsu(
         instruction = instruction;
 
         case (state)
-
             SEND_FLAG: begin
                 if(en==2'b01) begin 
                     tx_data = 8'b00000001;  
@@ -77,8 +76,10 @@ module lsu(
             end
 
             SEND_ADDR: begin
-                tx_data = address;  
-                tx_start = 0; 
+                if(en==LOAD || en==STORE) begin
+                    tx_data = address;  
+                    tx_start = 0; 
+                end
             end
 
             RECEIVE_DATA_HIGH: begin
@@ -112,7 +113,6 @@ module lsu(
                 tx_data = 8'b00000000;
                 done = 0;
                 instruction = instruction;
-
             end
         endcase
     end
@@ -135,10 +135,10 @@ module lsu(
                     end
                 end
             end
-            RECEIVE_DATA_HIGH: next_state = (rx_do==1'b1) ? RECEIVE_DATA_LOW:RECEIVE_DATA_HIGH;
-            RECEIVE_DATA_LOW: next_state = (rx_do==1'b1) ? DONE:RECEIVE_DATA_LOW;
-            SEND_DATA_HIGH: next_state = (tx_done==1'b1) ? SEND_DATA_LOW:SEND_DATA_HIGH;
-            SEND_DATA_LOW: next_state = (tx_done==1'b1) ? DONE:SEND_DATA_LOW;
+            RECEIVE_DATA_HIGH: next_state = (rx_do==1'b1) ? RECEIVE_DATA_LOW : RECEIVE_DATA_HIGH;
+            RECEIVE_DATA_LOW: next_state = (rx_do==1'b1) ? DONE : RECEIVE_DATA_LOW;
+            SEND_DATA_HIGH: next_state = (tx_done==1'b1) ? SEND_DATA_LOW : SEND_DATA_HIGH;
+            SEND_DATA_LOW: next_state = (tx_done==1'b1) ? DONE : SEND_DATA_LOW;
             DONE: next_state = SEND_FLAG;
             default: next_state = SEND_FLAG;
         endcase 
